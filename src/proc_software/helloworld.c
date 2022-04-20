@@ -1,4 +1,4 @@
-//#define RADIO_PERIPH_PRESENT
+#define RADIO_PERIPH_PRESENT
 
 #include <stdio.h>
 #include "platform.h"
@@ -11,7 +11,13 @@
 
 #ifdef RADIO_PERIPH_PRESENT
 
-#include "radio_tuner.h"
+#include "my_radio.h"
+
+void radioTuner_tuneRadio(u32 Addr, float freq);
+void radioTuner_setAdcFreq(unsigned int Addr, float freq);
+u32 RADIO_TUNER_mReadReg(u32 addr, u32 offset);
+
+
 void play_tune(u32 BaseAddress, float base_frequency)
 {
 	int i;
@@ -57,30 +63,47 @@ int main()
 {
 	u32 start_time,stop_time;
 	int i;
-
+	u32 regtest;
     init_platform();
-    print("\r\n\r\n\r\nLab 7 YOURNAME - Custom Peripheral Demonstration\n\r");
+    print("\r\n\r\n\r\nLab 7 EMMANUEL COLEMAN - Custom Peripheral Demonstration\n\r");
     print("Configuring Codec Now\r\n");
     configure_codec();
+	MY_RADIO_mWriteReg(XPAR_MY_RADIO_0_S00_AXI_BASEADDR, MY_RADIO_S00_AXI_SLV_REG2_OFFSET, 0x01);
 
 #ifdef RADIO_PERIPH_PRESENT
     print("Tuning Radio to 30MHz\n\r");
-    radioTuner_tuneRadio(XPAR_RADIO_TUNER_0_S00_AXI_BASEADDR,30e6);
+    radioTuner_tuneRadio(XPAR_MY_RADIO_0_S00_AXI_BASEADDR,30e6);
     print("Playing Tune at near 30MHz\r\n");
-    play_tune(XPAR_RADIO_TUNER_0_S00_AXI_BASEADDR,30e6);
+    play_tune(XPAR_MY_RADIO_0_S00_AXI_BASEADDR,30e6);
 
     // the below code does a little benchmark
-    start_time = RADIO_TUNER_mReadReg(XPAR_RADIO_TUNER_0_S00_AXI_BASEADDR, RADIO_TUNER_TIMER_REG_OFFSET);
+    start_time = MY_RADIO_mReadReg(XPAR_MY_RADIO_0_S00_AXI_BASEADDR, MY_RADIO_S00_AXI_SLV_REG3_OFFSET);
     for (i=0;i<2048;i++)
-        stop_time = RADIO_TUNER_mReadReg(XPAR_RADIO_TUNER_0_S00_AXI_BASEADDR, RADIO_TUNER_TIMER_REG_OFFSET);
+        stop_time = MY_RADIO_mReadReg(XPAR_MY_RADIO_0_S00_AXI_BASEADDR, MY_RADIO_S00_AXI_SLV_REG3_OFFSET);
     printf("Elapsed time in clocks = %u\n",stop_time-start_time);
     float throughput=0;
     // please insert your code here for calculate the actual throughput in Mbytes/second
     // how much data was transferred? How long did it take?
-  
-    printf("Estimated Transfer throughput = %f Mbytes/sec",throughput);
+    throughput = (float)(i+1)*32.*125./((float)(stop_time - start_time));
+    printf("Estimated Transfer throughput = %.2f Mbytes/sec\n\r",throughput);
 #endif
+	MY_RADIO_mWriteReg(XPAR_MY_RADIO_0_S00_AXI_BASEADDR, MY_RADIO_S00_AXI_SLV_REG1_OFFSET, 0x00);
 
     cleanup_platform();
     return 0;
 }
+
+
+void radioTuner_tuneRadio(u32 Addr, float freq)
+{
+	float pha = (float)(1<<27)/125000000.*freq;
+	MY_RADIO_mWriteReg(XPAR_MY_RADIO_0_S00_AXI_BASEADDR, MY_RADIO_S00_AXI_SLV_REG1_OFFSET, pha);
+}
+
+
+void radioTuner_setAdcFreq(unsigned int Addr, float freq)
+{
+	float pha = (float)(1<<27)/125000000.*freq;
+	MY_RADIO_mWriteReg(XPAR_MY_RADIO_0_S00_AXI_BASEADDR, MY_RADIO_S00_AXI_SLV_REG0_OFFSET, pha);
+}
+
