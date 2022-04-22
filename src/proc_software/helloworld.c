@@ -84,7 +84,7 @@ int main()
     float throughput=0;
     // please insert your code here for calculate the actual throughput in Mbytes/second
     // how much data was transferred? How long did it take?
-    throughput = (float)(i+1)*32.*125./((float)(stop_time - start_time));
+    throughput = (float)(i)*4.*125./((float)(stop_time - start_time));
     printf("Estimated Transfer throughput = %.2f Mbytes/sec\n\r",throughput);
 #endif
 	MY_RADIO_mWriteReg(XPAR_MY_RADIO_0_S00_AXI_BASEADDR, MY_RADIO_S00_AXI_SLV_REG1_OFFSET, 0x00);
